@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.expensetracker.data.local.AppDatabase
+import com.example.expensetracker.data.local.CurrencyPreferences
 import com.example.expensetracker.data.repository.TransactionRepositoryImpl
 import com.example.expensetracker.domain.model.Category
 import com.example.expensetracker.domain.model.Transaction
@@ -17,6 +18,7 @@ import com.example.expensetracker.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -25,12 +27,21 @@ class AddEditTransactionViewModel(
     private val transactionId: Long?
 ) : AndroidViewModel(application) {
     private val repository: TransactionRepository
+    private val currencyPreferences = CurrencyPreferences(application)
+
+    var currencySymbol by mutableStateOf("$")
+        private set
 
     init {
         val database = AppDatabase.getDatabase(application)
         repository = TransactionRepositoryImpl(database.transactionDao())
         if (transactionId != null && transactionId != -1L) {
             loadTransaction(transactionId)
+        }
+        viewModelScope.launch {
+            currencyPreferences.currencySymbolFlow.collectLatest { symbol ->
+                currencySymbol = symbol
+            }
         }
     }
 

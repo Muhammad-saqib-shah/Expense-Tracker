@@ -114,7 +114,7 @@ fun AddEditTransactionScreen(
             OutlinedTextField(
                 value = viewModel.amount,
                 onValueChange = { viewModel.onAmountChanged(it) },
-                label = { Text("Amount ($)") },
+                label = { Text("Amount (${viewModel.currencySymbol})") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 isError = viewModel.amountError != null,
                 supportingText = {

@@ -64,6 +64,7 @@ fun TransactionHistoryScreen(
                     items(uiState.transactions, key = { it.id }) { transaction ->
                         DismissibleTransactionRow(
                             transaction = transaction,
+                            currencySymbol = uiState.currencySymbol,
                             onDelete = { viewModel.deleteTransaction(transaction) },
                             onClick = { onItemClick(transaction.id) }
                         )
@@ -77,6 +78,7 @@ fun TransactionHistoryScreen(
 @Composable
 fun DismissibleTransactionRow(
     transaction: Transaction,
+    currencySymbol: String,
     onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
@@ -116,7 +118,7 @@ fun DismissibleTransactionRow(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "${if (isIncome) "+" else "-"}$ ${String.format(Locale.getDefault(), "%.2f", transaction.amount)}",
+                    text = "${if (isIncome) "+" else "-"}$currencySymbol ${String.format(Locale.getDefault(), "%.2f", transaction.amount)}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = if (isIncome) Color(0xFF2E7D32) else Color(0xFFC62828)

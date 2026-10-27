@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,13 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.expensetracker.domain.model.CurrencyDataSource
+import com.example.expensetracker.domain.model.CurrencyInfo
 import com.example.expensetracker.domain.model.Transaction
 import com.example.expensetracker.domain.model.TransactionType
-import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 @Composable
 fun HomeScreen(
@@ -27,6 +31,17 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showCurrencyDialog by remember { mutableStateOf(false) }
+
+    if (showCurrencyDialog) {
+        CurrencySelectionDialog(
+            currentSymbol = uiState.currencySymbol,
+            onCurrencySelected = { code, symbol ->
+                viewModel.updateCurrency(code, symbol)
+            },
+            onDismiss = { showCurrencyDialog = false }
+        )
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -60,14 +75,35 @@ fun HomeScreen(
                             .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = "Total Balance",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Total Balance",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            OutlinedButton(
+                                onClick = { showCurrencyDialog = true },
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text(text = uiState.currencySymbol, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Select Currency",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "$ ${String.format(Locale.getDefault(), "%.2f", uiState.totalBalance)}",
+                            text = "${uiState.currencySymbol} ${String.format(Locale.getDefault(), "%.2f", uiState.totalBalance)}",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -89,7 +125,7 @@ fun HomeScreen(
                                     Text("Income", style = MaterialTheme.typography.bodyMedium)
                                 }
                                 Text(
-                                    text = "$ ${String.format(Locale.getDefault(), "%.2f", uiState.totalIncome)}",
+                                    text = "${uiState.currencySymbol} ${String.format(Locale.getDefault(), "%.2f", uiState.totalIncome)}",
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFF2E7D32)
@@ -107,7 +143,7 @@ fun HomeScreen(
                                     Text("Expense", style = MaterialTheme.typography.bodyMedium)
                                 }
                                 Text(
-                                    text = "$ ${String.format(Locale.getDefault(), "%.2f", uiState.totalExpense)}",
+                                    text = "${uiState.currencySymbol} ${String.format(Locale.getDefault(), "%.2f", uiState.totalExpense)}",
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFFC62828)
@@ -153,7 +189,7 @@ fun HomeScreen(
                 }
             } else {
                 items(uiState.recentTransactions) { transaction ->
-                    TransactionItemRow(transaction = transaction)
+                    TransactionItemRow(transaction = transaction, currencySymbol = uiState.currencySymbol)
                 }
             }
         }
@@ -161,7 +197,104 @@ fun HomeScreen(
 }
 
 @Composable
-fun TransactionItemRow(transaction: Transaction) {
+fun CurrencySelectionDialog(
+    currentSymbol: String,
+    onCurrencySelected: (code: String, symbol: String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredCurrencies = remember(searchQuery) {
+        if (searchQuery.isBlank()) {
+            CurrencyDataSource.allCurrencies
+        } else {
+            CurrencyDataSource.allCurrencies.filter {
+                it.code.contains(searchQuery, ignoreCase = true) ||
+                it.name.contains(searchQuery, ignoreCase = true) ||
+                it.symbol.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Currency") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp)
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search currency, code, symbol") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(filteredCurrencies) { currency ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                onCurrencySelected(currency.code, currency.symbol)
+                                onDismiss()
+                            },
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = currency.symbol,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.width(48.dp)
+                                    )
+                                    Column {
+                                        Text(
+                                            text = currency.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            text = currency.code,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun TransactionItemRow(transaction: Transaction, currencySymbol: String) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     val isIncome = transaction.type == TransactionType.INCOME
 
@@ -197,10 +330,10 @@ fun TransactionItemRow(transaction: Transaction) {
                 )
             }
             Text(
-                text = "${if (isIncome) "+" else "-"}$ ${String.format(Locale.getDefault(), "%.2f", transaction.amount)}",
+                text = "${if (isIncome) "+" else "-"}$currencySymbol ${String.format(Locale.getDefault(), "%.2f", transaction.amount)}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isIncome) Color(0xFF2E7D32) else Color(0xFFC62828)
+                color = if (isIncome) Color(0xFF2E7D32) else Color(0xFFC62828 )
             )
         }
     }

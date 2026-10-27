@@ -56,7 +56,7 @@ fun StatisticsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(uiState.monthlySummaries) { summary ->
-                        MonthlySummaryCard(summary = summary)
+                        MonthlySummaryCard(summary = summary, currencySymbol = uiState.currencySymbol)
                     }
                 }
             }
@@ -65,7 +65,7 @@ fun StatisticsScreen(
 }
 
 @Composable
-fun MonthlySummaryCard(summary: MonthlySummary) {
+fun MonthlySummaryCard(summary: MonthlySummary, currencySymbol: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -88,14 +88,14 @@ fun MonthlySummaryCard(summary: MonthlySummary) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Income:", color = Color(0xFF2E7D32), fontWeight = FontWeight.SemiBold)
-                Text("$ ${String.format(Locale.getDefault(), "%.2f", summary.totalIncome)}", color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
+                Text("$currencySymbol ${String.format(Locale.getDefault(), "%.2f", summary.totalIncome)}", color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Expense:", color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold)
-                Text("$ ${String.format(Locale.getDefault(), "%.2f", summary.totalExpense)}", color = Color(0xFFC62828), fontWeight = FontWeight.Bold)
+                Text("$currencySymbol ${String.format(Locale.getDefault(), "%.2f", summary.totalExpense)}", color = Color(0xFFC62828), fontWeight = FontWeight.Bold)
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -103,7 +103,7 @@ fun MonthlySummaryCard(summary: MonthlySummary) {
             ) {
                 Text("Net Balance:", fontWeight = FontWeight.Bold)
                 Text(
-                    text = "$ ${String.format(Locale.getDefault(), "%.2f", summary.net)}",
+                    text = "$currencySymbol ${String.format(Locale.getDefault(), "%.2f", summary.net)}",
                     fontWeight = FontWeight.Bold,
                     color = if (summary.net >= 0) Color(0xFF2E7D32) else Color(0xFFC62828)
                 )
@@ -124,7 +124,7 @@ fun MonthlySummaryCard(summary: MonthlySummary) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(categoryName, style = MaterialTheme.typography.bodySmall)
-                        Text("$ ${String.format(Locale.getDefault(), "%.2f", amount)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                        Text("$currencySymbol ${String.format(Locale.getDefault(), "%.2f", amount)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
